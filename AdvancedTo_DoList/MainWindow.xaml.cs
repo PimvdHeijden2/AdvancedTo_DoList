@@ -25,7 +25,8 @@ namespace AdvancedTo_DoList
     public partial class MainWindow : Window
     {
         List<int> chosenIndexes = new List<int>();
-        
+        List<string> ChosenLines = new List<string>();
+
         public BrushConverter bc = new BrushConverter();
         string year = "";
         string month = "";
@@ -48,195 +49,125 @@ namespace AdvancedTo_DoList
 
         }
 
-        private void GenerateTasks(bool newItemAdded)//generates possible tasks to be done for that day
+        private void GenerateTasks(bool newItemAdded) // generates possible tasks to be done for that day
         {
-
             var today = DateTime.Now.ToString("dd MMM yyyy");
             var lastRecordedDate = File.ReadLines("..\\..\\DataBase\\Todays_Date.csv").Last();
-            StreamReader sr2 = new StreamReader("..\\..\\DataBase\\Todays_Tasks.csv");
-            StreamReader sr3 = new StreamReader("..\\..\\DataBase\\DataBase.csv");
+
             chosenIndexes.Clear();
-            string lineIndexes;
-            while ((lineIndexes = sr2.ReadLine()) != null)
+            ChosenLines.Clear();
+
+            // Reading today's tasks indexes
+            var todaysTaskLines = File.ReadLines("..\\..\\DataBase\\Todays_Tasks.csv").ToList();
+            
+
+            // If last recorded date is today and there are tasks for today
+            if (lastRecordedDate == today && todaysTaskLines.Count > 0)
             {
-                chosenIndexes.Add(Convert.ToInt32(lineIndexes));
-            }
-            if (lastRecordedDate == today && sr2.ReadToEnd() != "")
-            {
+                Console.WriteLine("test1");
                 string line;
-                string lineDB;
                 int i = 0;
 
-                while ((line = sr2.ReadLine()) != null)
+                using (var sr = new StreamReader("..\\..\\DataBase\\Todays_Tasks.csv"))
                 {
-                    sr3 = new StreamReader("..\\..\\DataBase\\DataBase.csv");
-                    Console.WriteLine(line);
-                    while ((lineDB = sr3.ReadLine()) != null)
+                    while((line = sr.ReadLine()) != null)
                     {
-                        Console.WriteLine(line + "  " + lineDB);
+                        ChosenLines.Add(line);
+                    }
+                    
+                    foreach(string LineDB in ChosenLines)
+                    {
 
-                        if (i.ToString() == line)
-                        {
-                            CreateTaskItem(lineDB);
-                            Console.WriteLine(line + "  " + lineDB + "   winererererrtetetse");
+                        CreateTaskItem(LineDB);
 
-                            i = 0;
-                            sr3.DiscardBufferedData();
-                        }
-                        i++;
-
-                        if ((lineDB = sr3.ReadLine()) == null)
-                        {
-                            i = 0;
-                            sr3.DiscardBufferedData();
-                        }
 
                     }
+                    
                 }
-                sr3.Close();
-                sr2.Close();
             }
-            else if (lastRecordedDate != today || sr2.ReadToEnd() == "")
+            else if (lastRecordedDate != today || todaysTaskLines.Count == 0)
             {
-                sr2.Close();
-                StreamWriter sw1 = new StreamWriter("..\\..\\DataBase\\Todays_Date.csv");
-                StreamReader sr = new StreamReader("..\\..\\DataBase\\DataBase.csv");
+                Console.WriteLine("test2");
 
-                sw1.WriteLine(today);
-                sw1.Close();
-
+                // Update today's date
+                using (var sw = new StreamWriter("..\\..\\DataBase\\Todays_Date.csv"))
+                {
+                    sw.WriteLine(today);
+                }
 
                 CanvasItems.Children.Clear();
                 List<string> lines = new List<string>();
-                List<string> ChosenLines = new List<string>();
-
-
-                string line;
-
-                string id = "";
-                string title = "";
-                string day = "";
-                string month = "";
-                string year = "";
-                string prio = "";
-
-                string[] values;
-
-
-                while ((line = sr.ReadLine()) != null)
+                using (var sr3 = new StreamReader("..\\..\\DataBase\\DataBase.csv"))
                 {
-
-                    lines.Add(line);
-
-                    values = line.Split('_');
-                    id = values[0].Replace("_", string.Empty);
-                    prio = values[1].Replace("_", string.Empty);
-                    day = values[2].Replace("_", string.Empty);
-                    month = values[3].Replace("_", string.Empty);
-                    year = values[4].Replace("_", string.Empty);
-                    title = values[5].Replace("_", string.Empty);
-                    int intPrio = Convert.ToInt32(prio);
-                    Random rnd = new Random();
-
-                    switch (intPrio)
+                    string line;
+                    while ((line = sr3.ReadLine()) != null)
                     {
-                        case 1:
+                        lines.Add(line);
+                        
+                    }
+                }
+                using (var sr3 = new StreamReader("..\\..\\DataBase\\DataBase.csv"))
+                {
+                    
+
+                    // Combine factors to determine final probability
+                    int buffer = 2;
+                    string line;
+                    while ((line = sr3.ReadLine()) != null)
+                    {
+                        var values = line.Split('_');
+                        int prio = Convert.ToInt32(values[1]);
+                        Random rnd = new Random();
+                        double baseProbability = 0.4; // Base probability for any task
+                        double priorityFactor = (10 - prio) / 10.0; // Higher priority tasks have a higher factor
+                        double taskFactor = 1.0 / lines.Count; // More tasks reduce individual task probability
+
+                        double probability = baseProbability + (priorityFactor * taskFactor);
+                        if (prio == 1 || rnd.NextDouble() <= probability)
+                        {
                             ChosenLines.Add(line);
-                            break;
-                        case 2:
-                            if (rnd.Next(1, intPrio) == 1)
-                            {
-                                ChosenLines.Add(line);
-                            }
-                            break;
-                        case 3:
-                            if (rnd.Next(1, intPrio) == 1)
-                            {
-                                ChosenLines.Add(line);
-                            }
-                            break;
-                        case 4:
-                            if (rnd.Next(1, intPrio) == 1)
-                            {
-                                ChosenLines.Add(line);
-                            }
-                            break;
-                        case 5:
-                            if (rnd.Next(1, intPrio) == 1)
-                            {
-                                ChosenLines.Add(line);
-                            }
-                            break;
-                        case 6:
-                            if (rnd.Next(1, intPrio) == 1)
-                            {
-                                ChosenLines.Add(line);
-                            }
-                            break;
-                        case 7:
-                            if (rnd.Next(1, intPrio) == 1)
-                            {
-                                ChosenLines.Add(line);
-                            }
-                            break;
-                        case 8:
-                            if (rnd.Next(1, intPrio) == 1)
-                            {
-                                ChosenLines.Add(line);
-                            }
-                            break;
-                        case 9:
-                            if (rnd.Next(1, intPrio) == 1)
-                            {
-                                ChosenLines.Add(line);
-                            }
-                            break;
+                        }
+                    }
+                }
+
+                // Handle newly added item if applicable
+                if (newItemAdded)
+                {
+                    var newlyAddedLine = File.ReadLines("..\\..\\DataBase\\DataBase.csv").Last();
+                    if (ChosenLines.Count <= 4)
+                    {
+                        ChosenLines.Add(newlyAddedLine);
                     }
                 }
 
                 Random rnd2 = new Random();
-
-                if (newItemAdded == true)
+                while (chosenIndexes.Count < 5 && chosenIndexes.Count < ChosenLines.Count -1)
                 {
-                    var NewlyAddedLine = File.ReadLines("..\\..\\DataBase\\DataBase.csv").Last();
-
-                    if (ChosenLines.Count <= 5)
-                    {
-                        ChosenLines.Add(NewlyAddedLine);
-                    }
-
-                }
-
-                while (chosenIndexes.Count < ChosenLines.Count)
-                {
-                    int randomIndex = rnd2.Next(0, ChosenLines.Count);
-                    if(chosenIndexes.Count == 0)
-                    {
-                        chosenIndexes.Add(randomIndex);
-                    }
+                    Console.WriteLine(ChosenLines.Count);
+                    int randomIndex = rnd2.Next(0, ChosenLines.Count - 1);
                     if (!chosenIndexes.Contains(randomIndex))
                     {
+                        Console.WriteLine(randomIndex);
+
                         chosenIndexes.Add(randomIndex);
                     }
-                    Console.WriteLine(randomIndex + "    " + chosenIndexes.Count);
                 }
-
-                sr.Close();
-                // File.WriteAllText("..\\..\\DataBase\\Todays_Tasks.csv", null);
-                
-                StreamWriter sw2 = new StreamWriter("..\\..\\DataBase\\Todays_Tasks.csv");
-                foreach (var index in chosenIndexes)
+            }
+            if(lastRecordedDate != today || todaysTaskLines.Count == 0)
+            {
+                // Write today's tasks indexes to file
+                using (var sw = new StreamWriter("..\\..\\DataBase\\Todays_Tasks.csv"))
                 {
-                    sw2.WriteLine($"{index}");
-
-                    CreateTaskItem(ChosenLines[index]);
-
+                    foreach (var index in chosenIndexes)
+                    {
+                        sw.WriteLine($"{ChosenLines[index]}");
+                        CreateTaskItem(ChosenLines[index]);
+                    }
                 }
-                sw2.Close();
             }
             
-
         }
+
         private void CreateTaskItem(string line)
         {
             string id = "";

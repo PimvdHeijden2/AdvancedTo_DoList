@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -16,6 +17,8 @@ using System.Windows.Media.Effects;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using System.Diagnostics;
+
 
 namespace AdvancedTo_DoList
 {
@@ -51,6 +54,7 @@ namespace AdvancedTo_DoList
         }
         private void CheckOutdatedProjects()
         {
+            List<string> lines = new List<string>();
 
             List<string> ToBeDeleted = new List<string>();
             
@@ -59,6 +63,7 @@ namespace AdvancedTo_DoList
                 string line;
                 while ((line = sr.ReadLine()) != null)
                 {
+                    lines.Add(line);
                     string id = "";
                     string day = "";
                     string month = "";
@@ -69,20 +74,43 @@ namespace AdvancedTo_DoList
                     values = line.Split('_');
 
                     id = values[0].Replace("_", string.Empty);
-                    day = values[2].Replace("_", string.Empty);
-                    month = values[3].Replace("_", string.Empty);
+                    day = values[3].Replace("_", string.Empty);
+                    month = values[2].Replace("_", string.Empty);
                     year = values[4].Replace("_", string.Empty);
 
 
-                    string today = DateTime.Now.ToString("dd mm yyyy").ToString();
+                    string today = DateTime.Now.ToString("MM dd yyyy");
+                    DateTime Today = DateTime.ParseExact(today, "MM dd yyyy", CultureInfo.InvariantCulture);
 
-                    string dueDate = $"{day} {month} {year}";
-                    if (dueDate ==  today) { }// hier gebleven
+
+                    DateTime dueDate = DateTime.ParseExact($"{month} {day} {year}", "MM dd yyyy", CultureInfo.InvariantCulture);
+                    if (dueDate < Today.Date)
+                    {
+                        Console.WriteLine($"{dueDate}   {today}");
+                        ToBeDeleted.Add(line);
+                    }
+
                 }
             }
+           
+            List<string> remainingLines = new List<string>();
+            foreach(var line in lines)
+            {
+                if (!ToBeDeleted.Contains(line))
+                {
+                    remainingLines.Add(line);
+                }
+            }
+
+            File.WriteAllLines("..\\..\\DataBase\\DataBase.csv", remainingLines);
+
+
         }
+
+
         private void GenerateTasks(bool newItemAdded) // generates possible tasks to be done for that day
         {
+            CanvasItems.Children.Clear();
             var today = DateTime.Now.ToString("dd MMM yyyy");
             var lastRecordedDate = File.ReadLines("..\\..\\DataBase\\Todays_Date.csv").Last();
 
@@ -91,8 +119,48 @@ namespace AdvancedTo_DoList
 
             // Reading today's tasks indexes
             var todaysTaskLines = File.ReadLines("..\\..\\DataBase\\Todays_Tasks.csv").ToList();
-            
 
+            // Handle newly added item if applicable
+            if (newItemAdded == true)
+            {
+                List<string> lines = new List<string>();
+                using (var sr3 = new StreamReader("..\\..\\DataBase\\DataBase.csv"))
+                {
+                    string line;
+                    while ((line = sr3.ReadLine()) != null)
+                    {
+                        lines.Add(line);
+
+                    }
+                }
+                if (chosenIndexes.Count <= 5)
+                {
+                    if (lines.Count >= 2)
+                    {
+                        // Get the second last line (index: lines.Count - 2)
+                        string secondLastLine = lines[lines.Count - 2];
+                        Console.WriteLine(secondLastLine);
+                        ChosenLines.Add(secondLastLine);
+
+                    }
+                    else
+                    {
+                        string secondLastLine = lines[lines.Count - 1];
+                        Console.WriteLine(secondLastLine);
+
+                        ChosenLines.Add(secondLastLine);
+
+                    }
+                    Console.WriteLine(lines.Count);
+                }
+                using (var sw = new StreamWriter("..\\..\\DataBase\\Todays_Date.csv"))
+                {
+                    sw.Write(".");
+                }
+                var process = Process.GetCurrentProcess();
+                Process.Start(process.MainModule.FileName);
+                Application.Current.Shutdown();
+            }
             // If last recorded date is today and there are tasks for today
             if (lastRecordedDate == today && todaysTaskLines.Count > 0)
             {
@@ -161,15 +229,7 @@ namespace AdvancedTo_DoList
                     }
                 }
 
-                // Handle newly added item if applicable
-                if (newItemAdded)
-                {
-                    var newlyAddedLine = File.ReadLines("..\\..\\DataBase\\DataBase.csv").Last();
-                    if (ChosenLines.Count <= 4)
-                    {
-                        ChosenLines.Add(newlyAddedLine);
-                    }
-                }
+                
 
                 Random rnd2 = new Random();
                 while (chosenIndexes.Count < 5 && chosenIndexes.Count < ChosenLines.Count -1)
@@ -214,8 +274,8 @@ namespace AdvancedTo_DoList
 
             id = values[0].Replace("_", string.Empty);
             prio = values[1].Replace("_", string.Empty);
-            day = values[2].Replace("_", string.Empty);
-            month = values[3].Replace("_", string.Empty);
+            month = values[2].Replace("_", string.Empty);
+            day = values[3].Replace("_", string.Empty);
             year = values[4].Replace("_", string.Empty);
             title = values[5].Replace("_", string.Empty);
 
@@ -342,7 +402,7 @@ namespace AdvancedTo_DoList
                     lines.Add(line);
                 }
 
-                string id = (idCounter += 1).ToString();
+                string id = (idCounter).ToString();
                 id = "0" + id;
                 if (id.Length <= 2)
                 {
@@ -351,11 +411,8 @@ namespace AdvancedTo_DoList
 
                 sr2.Close(); 
                 StreamWriter sw = new StreamWriter("..\\..\\DataBase\\DataBase.csv");
-                foreach (var Line in lines)
-                {
-                    sw.WriteLine(Line);
-                }
-                sw.Write($"{id}_{prio}_{date}_{name}");
+                
+                sw.Write($"{id}_{prio}_{date}_{name}\n");
 
                 sw.Close();
             }
@@ -428,7 +485,6 @@ namespace AdvancedTo_DoList
 
                 AddDeadline(Convert.ToInt32(prio), date, name);
                 
-                var lastLine = File.ReadLines("..\\..\\DataBase\\DataBase.csv").Last();
                 month = "";
                 day = "";
                 tbxName.Text = "";

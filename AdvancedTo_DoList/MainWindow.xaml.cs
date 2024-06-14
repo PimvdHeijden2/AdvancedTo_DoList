@@ -48,7 +48,7 @@ namespace AdvancedTo_DoList
             DragMove();
 
         }
-
+        
         private void GenerateTasks(bool newItemAdded) // generates possible tasks to be done for that day
         {
             var today = DateTime.Now.ToString("dd MMM yyyy");
@@ -111,7 +111,6 @@ namespace AdvancedTo_DoList
                     
 
                     // Combine factors to determine final probability
-                    int buffer = 2;
                     string line;
                     while ((line = sr3.ReadLine()) != null)
                     {

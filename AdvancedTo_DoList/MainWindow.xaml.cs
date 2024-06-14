@@ -40,6 +40,7 @@ namespace AdvancedTo_DoList
         public MainWindow()
         {
             InitializeComponent();
+            CheckOutdatedProjects();
             GenerateTasks(false);
         }
 
@@ -48,7 +49,38 @@ namespace AdvancedTo_DoList
             DragMove();
 
         }
-        
+        private void CheckOutdatedProjects()
+        {
+
+            List<string> ToBeDeleted = new List<string>();
+            
+            using (var sr = new StreamReader("..\\..\\DataBase\\DataBase.csv"))
+            {
+                string line;
+                while ((line = sr.ReadLine()) != null)
+                {
+                    string id = "";
+                    string day = "";
+                    string month = "";
+                    string year = "";
+
+                    string[] values;
+
+                    values = line.Split('_');
+
+                    id = values[0].Replace("_", string.Empty);
+                    day = values[2].Replace("_", string.Empty);
+                    month = values[3].Replace("_", string.Empty);
+                    year = values[4].Replace("_", string.Empty);
+
+
+                    string today = DateTime.Now.ToString("dd mm yyyy").ToString();
+
+                    string dueDate = $"{day} {month} {year}";
+                    if (dueDate ==  today) { }// hier gebleven
+                }
+            }
+        }
         private void GenerateTasks(bool newItemAdded) // generates possible tasks to be done for that day
         {
             var today = DateTime.Now.ToString("dd MMM yyyy");
